@@ -8,28 +8,24 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator;
+package org.eclipse.kapua.kura.simulator.app;
 
-import java.util.Map;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 
-public interface SimulatorTransport {
+@NonNullByDefault
+public interface Application {
 
-	/**
-	 * Connect
-	 */
-	public void connect();
+	public static class Descriptor {
+		private final String id;
 
-	/**
-	 * Disconnect gracefully <br>
-	 * A later call to {@link #connect()} must be possible.
-	 */
-	public void disconnect();
+		public Descriptor(final String id) {
+			this.id = id;
+		}
 
-	public void whenConnected(Runnable runnable);
+		public String getId() {
+			return this.id;
+		}
+	}
 
-	public void whenDisconnected(Runnable runnable);
-
-	public void sendAppCertificate(Map<String, Object> appMetrics);
-
-	public void sendBirthCertificate(Map<String, Object> birthMetrics);
+	public Descriptor getDescriptor();
 }

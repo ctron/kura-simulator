@@ -10,14 +10,19 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.kapua.kura.simulator.app.Application;
+import org.eclipse.kapua.kura.simulator.app.SimpleCommandApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-public class Application {
-	private static final Logger logger = LoggerFactory.getLogger(Application.class);
+public class TestApplication {
+	private static final Logger logger = LoggerFactory.getLogger(TestApplication.class);
 
 	public static void main(final String[] args) throws Exception {
 
@@ -28,8 +33,11 @@ public class Application {
 		final GatewayConfiguration configuration = new GatewayConfiguration(
 				"tcp://kapua-broker:kapua-password@localhost:1883", "kapua-sys", "sim-1");
 
-		try (MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
-				Simulator simulator = new Simulator(configuration, transport);) {
+		final Set<@NonNull Application> apps = new HashSet<>();
+		apps.add(new SimpleCommandApplication(s -> String.format("Command '%s' not found", s)));
+
+		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
+				final Simulator simulator = new Simulator(configuration, transport, apps);) {
 			Thread.sleep(10_000);
 		}
 	}

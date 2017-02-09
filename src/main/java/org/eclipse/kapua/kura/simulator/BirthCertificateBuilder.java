@@ -12,20 +12,30 @@ package org.eclipse.kapua.kura.simulator;
 
 import static java.time.Duration.between;
 import static java.time.Instant.now;
+import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.kapua.kura.simulator.app.Application;
+
+@NonNullByDefault
 public class BirthCertificateBuilder {
 	private final GatewayConfiguration configuration;
 	private final Instant started;
+	private final Set<Application> applications;
 
-	public BirthCertificateBuilder(final GatewayConfiguration configuration, final Instant started) {
+	public BirthCertificateBuilder(final GatewayConfiguration configuration, final Instant started,
+			final Set<Application> applications) {
 		this.configuration = configuration;
 		this.started = started;
+		this.applications = applications;
 	}
 
+	@SuppressWarnings("null")
 	public Map<String, Object> build() {
 		final Map<String, Object> result = new HashMap<>();
 
@@ -53,6 +63,9 @@ public class BirthCertificateBuilder {
 		result.put("kura_version", "ksim-kura-v42");
 		result.put("osgi_framework", "Kura Simulator (OSGi version)");
 		result.put("osgi_framework_version", "ksim-osgi-v42");
+
+		result.put("application_ids",
+				this.applications.stream().map(app -> app.getDescriptor().getId()).collect(joining(",")));
 
 		return result;
 	}

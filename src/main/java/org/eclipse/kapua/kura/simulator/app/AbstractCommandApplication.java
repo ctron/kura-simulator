@@ -8,28 +8,20 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator;
+package org.eclipse.kapua.kura.simulator.app;
 
-import java.util.Map;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 
-public interface SimulatorTransport {
+@NonNullByDefault
+public abstract class AbstractCommandApplication implements Application {
 
-	/**
-	 * Connect
-	 */
-	public void connect();
+	private static final Descriptor DESCRIPTOR = new Descriptor("CMD-V1");
 
-	/**
-	 * Disconnect gracefully <br>
-	 * A later call to {@link #connect()} must be possible.
-	 */
-	public void disconnect();
+	@Override
+	public Descriptor getDescriptor() {
+		return DESCRIPTOR;
+	}
 
-	public void whenConnected(Runnable runnable);
-
-	public void whenDisconnected(Runnable runnable);
-
-	public void sendAppCertificate(Map<String, Object> appMetrics);
-
-	public void sendBirthCertificate(Map<String, Object> birthMetrics);
+	public abstract @Nullable String executeCommand(@Nullable String command);
 }

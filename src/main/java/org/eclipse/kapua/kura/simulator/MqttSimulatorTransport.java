@@ -154,6 +154,20 @@ public class MqttSimulatorTransport implements AutoCloseable, SimulatorTransport
 	}
 
 	@Override
+	public void sendAppCertificate(final Map<String, Object> appMetrics) {
+		try {
+			final String topic = makeTopic("MQTT/APP");
+			final KuraPayload.Builder builder = KuraPayload.newBuilder();
+
+			convertMetrics(builder, appMetrics);
+
+			this.client.publish(topic, builder.build().toByteArray(), 0, false);
+		} catch (final Exception e) {
+			logger.warn("Failed to send out message", e);
+		}
+	}
+
+	@Override
 	public void sendBirthCertificate(final Map<String, Object> birthMetrics) {
 		try {
 			final String topic = makeTopic("MQTT/BIRTH");

@@ -8,28 +8,23 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator;
+package org.eclipse.kapua.kura.simulator.app;
 
-import java.util.Map;
+import java.util.function.Function;
 
-public interface SimulatorTransport {
+import org.eclipse.jdt.annotation.Nullable;
 
-	/**
-	 * Connect
-	 */
-	public void connect();
+public class SimpleCommandApplication extends AbstractCommandApplication {
 
-	/**
-	 * Disconnect gracefully <br>
-	 * A later call to {@link #connect()} must be possible.
-	 */
-	public void disconnect();
+	private final Function<String, String> handler;
 
-	public void whenConnected(Runnable runnable);
+	public SimpleCommandApplication(final Function<String, String> handler) {
+		this.handler = handler;
+	}
 
-	public void whenDisconnected(Runnable runnable);
+	@Override
+	public @Nullable String executeCommand(final @Nullable String command) {
+		return this.handler.apply(command);
+	}
 
-	public void sendAppCertificate(Map<String, Object> appMetrics);
-
-	public void sendBirthCertificate(Map<String, Object> birthMetrics);
 }
