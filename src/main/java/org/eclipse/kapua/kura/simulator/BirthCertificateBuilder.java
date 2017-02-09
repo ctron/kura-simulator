@@ -10,16 +10,23 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator;
 
+import static com.google.common.io.BaseEncoding.base16;
 import static java.time.Duration.between;
 import static java.time.Instant.now;
 import static java.util.stream.Collectors.joining;
 
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.time.Instant;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.kapua.kura.simulator.app.Application;
 
 @NonNullByDefault
@@ -33,6 +40,51 @@ public class BirthCertificateBuilder {
 		this.configuration = configuration;
 		this.started = started;
 		this.applications = applications;
+	}
+
+	@SuppressWarnings("null")
+	protected static void fillInConnection(final Map<String, Object> metrics) {
+		try {
+			final Enumeration<@Nullable NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+			if (nis == null) {
+				return;
+			}
+
+			final List<String> interfaces = new LinkedList<>();
+			final List<String> addresses = new LinkedList<>();
+
+			while (nis.hasMoreElements()) {
+				final NetworkInterface ni = nis.nextElement();
+				if (ni == null) {
+					continue;
+				}
+
+				// we only "iterate" over the first address, then we break
+
+				for (final InterfaceAddress addr : ni.getInterfaceAddresses()) {
+
+					String hostAddress = addr.getAddress().getHostAddress();
+
+					// replace IPv6 interface
+					hostAddress = hostAddress.replaceAll("%.*$", "");
+
+					addresses.add(hostAddress);
+
+					final String name = ni.getName();
+					final String hwAddr = base16().upperCase().withSeparator(":", 2).encode(ni.getHardwareAddress());
+
+					interfaces.add(String.format("%s (%s)", name, hwAddr));
+
+					break; // only the first address
+				}
+
+				// now add the result
+
+				metrics.put("connection_interface", String.join(",", interfaces));
+				metrics.put("connection_ip", String.join(",", addresses));
+			}
+		} catch (final Exception e) {
+		}
 	}
 
 	@SuppressWarnings("null")
@@ -63,6 +115,8 @@ public class BirthCertificateBuilder {
 		result.put("kura_version", "ksim-kura-v42");
 		result.put("osgi_framework", "Kura Simulator (OSGi version)");
 		result.put("osgi_framework_version", "ksim-osgi-v42");
+
+		fillInConnection(result);
 
 		result.put("application_ids",
 				this.applications.stream().map(app -> app.getDescriptor().getId()).collect(joining(",")));
