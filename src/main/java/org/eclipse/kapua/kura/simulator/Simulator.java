@@ -39,7 +39,7 @@ public class Simulator implements AutoCloseable {
 		this.started = now();
 		this.transport = transport;
 
-		// set of callbacks
+		// set up callbacks
 
 		this.transport.whenConnected(this::connected);
 		this.transport.whenDisconnected(this::disconnected);
