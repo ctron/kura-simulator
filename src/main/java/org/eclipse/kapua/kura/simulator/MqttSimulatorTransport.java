@@ -10,24 +10,30 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator;
 
+import static java.util.Objects.requireNonNull;
+
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload;
-import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.KuraMetric;
-import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.KuraMetric.ValueType;
+import org.eclipse.kapua.kura.simulator.payload.Message;
+import org.eclipse.kapua.kura.simulator.topic.Topic;
+import org.eclipse.kapua.kura.simulator.topic.Topics;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.ByteString;
-
-public class MqttSimulatorTransport implements AutoCloseable, SimulatorTransport {
+public class MqttSimulatorTransport implements AutoCloseable, Transport {
 
 	private static final Logger logger = LoggerFactory.getLogger(MqttSimulatorTransport.class);
 
@@ -41,11 +47,33 @@ public class MqttSimulatorTransport implements AutoCloseable, SimulatorTransport
 
 	private Runnable onDisconnected;
 
+	private final Map<String, String> topicContext;
+
 	public MqttSimulatorTransport(final GatewayConfiguration configuration) throws MqttException {
 		this.configuration = configuration;
 
+		this.topicContext = new HashMap<>();
+
+		this.topicContext.put("account-name", configuration.getAccountName());
+		this.topicContext.put("client-id", configuration.getClientId());
+
 		final String plainBrokerUrl = plainUrl(configuration.getBrokerUrl());
 		this.client = new MqttAsyncClient(plainBrokerUrl, configuration.getClientId());
+		this.client.setCallback(new MqttCallback() {
+
+			@Override
+			public void messageArrived(final String topic, final MqttMessage message) throws Exception {
+			}
+
+			@Override
+			public void deliveryComplete(final IMqttDeliveryToken token) {
+			}
+
+			@Override
+			public void connectionLost(final Throwable cause) {
+				handleDisconnected();
+			}
+		});
 		this.connectOptions = createConnectOptions(configuration.getBrokerUrl());
 	}
 
@@ -62,7 +90,9 @@ public class MqttSimulatorTransport implements AutoCloseable, SimulatorTransport
 	private MqttConnectOptions createConnectOptions(final String brokerUrl) {
 		try {
 			final URIBuilder u = new URIBuilder(brokerUrl);
+
 			final MqttConnectOptions result = new MqttConnectOptions();
+			result.setAutomaticReconnect(true);
 
 			final String ui = u.getUserInfo();
 			if (ui != null && !ui.isEmpty()) {
@@ -130,6 +160,37 @@ public class MqttSimulatorTransport implements AutoCloseable, SimulatorTransport
 	}
 
 	@Override
+	public void subscribe(final Topic topic, final Consumer<Message> consumer) {
+		requireNonNull(consumer);
+
+		try {
+			this.client.subscribe(topic.render(this.topicContext), 0, null, null, new IMqttMessageListener() {
+
+				@Override
+				public void messageArrived(final String topic, final MqttMessage message) throws Exception {
+					final String localReceivedTopic = makeLocalTopic(topic);
+					consumer.accept(new Message(localReceivedTopic, message.getPayload()));
+				}
+			});
+		} catch (final MqttException e) {
+			if (e.getReasonCode() != MqttException.REASON_CODE_CLIENT_NOT_CONNECTED) {
+				logger.warn("Failed to subscribe to: {}", topic, e);
+			}
+		}
+	}
+
+	@Override
+	public void unsubscribe(final Topic topic) {
+		try {
+			this.client.unsubscribe(topic.render(this.topicContext));
+		} catch (final MqttException e) {
+			if (e.getReasonCode() != MqttException.REASON_CODE_CLIENT_NOT_CONNECTED) {
+				logger.warn("Failed to unsubscribe: {}", topic, e);
+			}
+		}
+	}
+
+	@Override
 	public void whenConnected(final Runnable runnable) {
 		this.onConnected = runnable;
 	}
@@ -154,72 +215,27 @@ public class MqttSimulatorTransport implements AutoCloseable, SimulatorTransport
 	}
 
 	@Override
-	public void sendAppCertificate(final Map<String, Object> appMetrics) {
+	public void sendMessage(final Topic topic, final byte[] payload) {
+		logger.debug("Sending message - topic: {}, payload: {}", topic, payload);
+
 		try {
-			final String topic = makeTopic("MQTT/APP");
-			final KuraPayload.Builder builder = KuraPayload.newBuilder();
+			final String fullTopic = topic.render(this.topicContext);
+			logger.debug("Full topic: {}", fullTopic);
 
-			convertMetrics(builder, appMetrics);
-
-			this.client.publish(topic, builder.build().toByteArray(), 0, false);
+			this.client.publish(fullTopic, payload, 0, false);
 		} catch (final Exception e) {
 			logger.warn("Failed to send out message", e);
 		}
 	}
 
-	@Override
-	public void sendBirthCertificate(final Map<String, Object> birthMetrics) {
-		try {
-			final String topic = makeTopic("MQTT/BIRTH");
-			final KuraPayload.Builder builder = KuraPayload.newBuilder();
-
-			convertMetrics(builder, birthMetrics);
-
-			this.client.publish(topic, builder.build().toByteArray(), 0, false);
-		} catch (final Exception e) {
-			logger.warn("Failed to send out message", e);
-		}
+	@Deprecated
+	private String makeLocalTopic(final String topic) {
+		return Topics.localize(makeTopic(null), topic);
 	}
 
-	private void convertMetrics(final KuraPayload.Builder builder, final Map<String, Object> metrics) {
-
-		for (final Map.Entry<String, Object> metric : metrics.entrySet()) {
-
-			final KuraMetric.Builder b = KuraMetric.newBuilder();
-			b.setName(metric.getKey());
-
-			final Object value = metric.getValue();
-			if (value instanceof Boolean) {
-				b.setType(ValueType.BOOL);
-				b.setBoolValue((boolean) value);
-			} else if (value instanceof Integer) {
-				b.setType(ValueType.INT32);
-				b.setIntValue((int) value);
-			} else if (value instanceof String) {
-				b.setType(ValueType.STRING);
-				b.setStringValue((String) value);
-			} else if (value instanceof Long) {
-				b.setType(ValueType.INT64);
-				b.setLongValue((Long) value);
-			} else if (value instanceof Double) {
-				b.setType(ValueType.DOUBLE);
-				b.setDoubleValue((Double) value);
-			} else if (value instanceof Float) {
-				b.setType(ValueType.FLOAT);
-				b.setFloatValue((Float) value);
-			} else if (value instanceof byte[]) {
-				b.setType(ValueType.BYTES);
-				b.setBytesValue(ByteString.copyFrom((byte[]) value));
-			} else {
-				throw new IllegalArgumentException(String.format("Illegal metric data type: %s", value.getClass()));
-			}
-
-			builder.addMetric(b);
-		}
-	}
-
+	@Deprecated
 	private String makeTopic(final String localTopic) {
-		return String.format("$EDC/%s/%s/%s", this.configuration.getAccountName(), this.configuration.getClientId(),
-				localTopic);
+		return String.format("$EDC/%s/%s%s", this.configuration.getAccountName(), this.configuration.getClientId(),
+				localTopic != null ? "/" + localTopic : "");
 	}
 }

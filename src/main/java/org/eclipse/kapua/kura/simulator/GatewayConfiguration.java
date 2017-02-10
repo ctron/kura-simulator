@@ -10,9 +10,6 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-
-@NonNullByDefault
 public class GatewayConfiguration {
 	private final String brokerUrl;
 	private final String accountName;

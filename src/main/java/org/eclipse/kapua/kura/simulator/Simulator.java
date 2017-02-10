@@ -13,53 +13,66 @@ package org.eclipse.kapua.kura.simulator;
 import static java.time.Instant.now;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.kapua.kura.simulator.app.Application;
+import org.eclipse.kapua.kura.simulator.app.ApplicationController;
+import org.eclipse.kapua.kura.simulator.payload.BirthCertificateBuilder;
+import org.eclipse.kapua.kura.simulator.topic.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@NonNullByDefault
 public class Simulator implements AutoCloseable {
 
-	@SuppressWarnings("null")
 	private static final Logger logger = LoggerFactory.getLogger(Simulator.class);
 
-	private final SimulatorTransport transport;
+	private final Transport transport;
 	private final Instant started;
 
 	private final BirthCertificateBuilder birthCertificateBuilder;
 
-	private final Set<Application> applications;
+	private final ApplicationController applicationController;
 
-	@SuppressWarnings("null")
-	public Simulator(final GatewayConfiguration configuration, final SimulatorTransport transport,
+	public Simulator(final GatewayConfiguration configuration, final Transport transport,
 			final Set<Application> applications) {
 
 		this.started = now();
 		this.transport = transport;
-		this.applications = new HashSet<>(applications);
 
-		this.birthCertificateBuilder = new BirthCertificateBuilder(configuration, this.started, this.applications);
+		// set of callbacks
 
 		this.transport.whenConnected(this::connected);
 		this.transport.whenDisconnected(this::disconnected);
+
+		// set up application controller
+
+		this.applicationController = new ApplicationController(transport);
+		applications.forEach(this.applicationController::add);
+
+		// set up builder
+
+		this.birthCertificateBuilder = new BirthCertificateBuilder(configuration, this.started,
+				this.applicationController::getApplicationIds);
+
+		// finally connect
 
 		this.transport.connect();
 	}
 
 	@Override
 	public void close() {
+		this.transport.disconnect();
 	}
 
 	public void connected() {
 		logger.info("Connected ... sending birth certificate ...");
-		this.transport.sendBirthCertificate(this.birthCertificateBuilder.build());
+		// FIXME: pull out as simulator modules
+		this.transport.sendMessage(Topic.device("MQTT/BIRTH"), this.birthCertificateBuilder.build());
+		this.applicationController.connected();
 	}
 
 	public void disconnected() {
+		this.applicationController.disconnected();
 	}
 
 }

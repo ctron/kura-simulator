@@ -8,28 +8,10 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator;
+package org.eclipse.kapua.kura.simulator.app;
 
-import java.util.Map;
+import org.eclipse.kapua.kura.simulator.topic.Topic;
 
-public interface SimulatorTransport {
-
-	/**
-	 * Connect
-	 */
-	public void connect();
-
-	/**
-	 * Disconnect gracefully <br>
-	 * A later call to {@link #connect()} must be possible.
-	 */
-	public void disconnect();
-
-	public void whenConnected(Runnable runnable);
-
-	public void whenDisconnected(Runnable runnable);
-
-	public void sendAppCertificate(Map<String, Object> appMetrics);
-
-	public void sendBirthCertificate(Map<String, Object> birthMetrics);
+public interface ApplicationContext {
+	public void sendMessage(Topic topic, byte[] payload);
 }

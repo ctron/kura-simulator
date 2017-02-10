@@ -16,7 +16,7 @@ import java.util.logging.Level;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.kapua.kura.simulator.app.Application;
-import org.eclipse.kapua.kura.simulator.app.SimpleCommandApplication;
+import org.eclipse.kapua.kura.simulator.app.command.SimpleCommandApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -38,7 +38,7 @@ public class TestApplication {
 
 		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
 				final Simulator simulator = new Simulator(configuration, transport, apps);) {
-			Thread.sleep(10_000);
+			Thread.sleep(120_000);
 		}
 	}
 

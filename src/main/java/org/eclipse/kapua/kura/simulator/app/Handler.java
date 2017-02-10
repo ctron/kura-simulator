@@ -10,9 +10,19 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator.app;
 
-public interface Application {
+import org.eclipse.kapua.kura.simulator.payload.Message;
 
-	public Descriptor getDescriptor();
+public interface Handler extends AutoCloseable {
+	public default void connected() {
+	}
 
-	public Handler createHandler(ApplicationContext context);
+	public default void disconnected() {
+	}
+
+	public default void processMessage(final Message message) {
+	}
+
+	@Override
+	public default void close() throws Exception {
+	}
 }

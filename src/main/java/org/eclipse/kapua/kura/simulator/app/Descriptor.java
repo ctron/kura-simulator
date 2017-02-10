@@ -10,18 +10,14 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator.app;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
+public class Descriptor {
+	private final String id;
 
-@NonNullByDefault
-public abstract class AbstractCommandApplication implements Application {
-
-	private static final Descriptor DESCRIPTOR = new Descriptor("CMD-V1");
-
-	@Override
-	public Descriptor getDescriptor() {
-		return DESCRIPTOR;
+	public Descriptor(final String id) {
+		this.id = id;
 	}
 
-	public abstract @Nullable String executeCommand(@Nullable String command);
+	public String getId() {
+		return this.id;
+	}
 }

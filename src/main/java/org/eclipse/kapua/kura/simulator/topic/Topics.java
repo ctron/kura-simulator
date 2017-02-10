@@ -8,23 +8,37 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator.app;
+package org.eclipse.kapua.kura.simulator.topic;
 
-import java.util.function.Function;
-
-import org.eclipse.jdt.annotation.Nullable;
-
-public class SimpleCommandApplication extends AbstractCommandApplication {
-
-	private final Function<String, String> handler;
-
-	public SimpleCommandApplication(final Function<String, String> handler) {
-		this.handler = handler;
+public final class Topics {
+	private Topics() {
 	}
 
-	@Override
-	public @Nullable String executeCommand(final @Nullable String command) {
-		return this.handler.apply(command);
+	public static String localize(final String prefix, final String topic) {
+		if (prefix == null) {
+			return topic;
+		}
+
+		if (topic == null) {
+			return null;
+		}
+
+		// test if this is an exact match
+
+		if (topic.equals(prefix)) {
+			// main topic
+			return "";
+		}
+
+		// not a match
+
+		if (!topic.startsWith(prefix + "/")) {
+			return null;
+		}
+
+		// cut off prefix
+
+		return topic.substring(prefix.length() + 1);
 	}
 
 }

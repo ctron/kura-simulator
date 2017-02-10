@@ -8,11 +8,21 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator.app;
+package org.eclipse.kapua.kura.simulator.app.command;
 
-public interface Application {
+import java.util.function.Function;
 
-	public Descriptor getDescriptor();
+public class SimpleCommandApplication extends AbstractCommandApplication {
 
-	public Handler createHandler(ApplicationContext context);
+	private final Function<String, String> handler;
+
+	public SimpleCommandApplication(final Function<String, String> handler) {
+		this.handler = handler;
+	}
+
+	@Override
+	public Result executeCommand(final String command) {
+		return new Result(this.handler.apply(command), "", 0, false);
+	}
+
 }
