@@ -63,7 +63,7 @@ public abstract class AbstractCommandApplication extends AbstractDefaultApplicat
 
 	@Override
 	protected void processRequest(final Request request) {
-		if (!"EXEC/command".equals(request.getMessage().getLocalTopic())) {
+		if (!"EXEC/command".equals(request.getMessage().getTopic().render(0, 2))) {
 			request.sendNotFound();
 			return;
 		}

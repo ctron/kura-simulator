@@ -16,7 +16,9 @@ import java.util.logging.Level;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.kapua.kura.simulator.app.Application;
+import org.eclipse.kapua.kura.simulator.app.annotated.AnnotatedApplication;
 import org.eclipse.kapua.kura.simulator.app.command.SimpleCommandApplication;
+import org.eclipse.kapua.kura.simulator.app.deploy.SimpleDeployApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -35,6 +37,7 @@ public class TestApplication {
 
 		final Set<@NonNull Application> apps = new HashSet<>();
 		apps.add(new SimpleCommandApplication(s -> String.format("Command '%s' not found", s)));
+		apps.add(AnnotatedApplication.build(SimpleDeployApplication.class));
 
 		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
 				final Simulator simulator = new Simulator(configuration, transport, apps);) {

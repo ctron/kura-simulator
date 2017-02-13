@@ -10,35 +10,58 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator.payload;
 
-import org.eclipse.kapua.kura.simulator.topic.Topics;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Map;
+
+import org.eclipse.kapua.kura.simulator.topic.Topic;
+import org.eclipse.kapua.kura.simulator.topic.Topic.Segment;
+import org.eclipse.kapua.kura.simulator.util.Hex;
 
 public class Message {
-	private final String localTopic;
+	private final Topic topic;
 	private final byte[] payload;
+	private final Map<String, String> topicContext;
 
-	public Message(final String localTopic, final byte[] payload) {
-		this.localTopic = localTopic;
-		this.payload = payload;
+	public Message(final Topic topic, final byte[] payload) {
+		this(topic, payload, Collections.emptyMap());
 	}
 
-	public String getLocalTopic() {
-		return this.localTopic;
+	public Message(final Topic topic, final byte[] payload, final Map<String, String> topicContext) {
+		this.topic = topic;
+		this.payload = payload;
+		this.topicContext = topicContext;
+	}
+
+	public Topic getTopic() {
+		return this.topic;
 	}
 
 	public byte[] getPayload() {
 		return this.payload;
 	}
 
-	public Message localize(final String prefix) {
-		final String newTopic = Topics.localize(prefix, this.localTopic);
-		if (newTopic == null) {
-			return null;
+	public Message localize(final Topic topic) {
+		return localize(topic, this.topicContext);
+	}
+
+	public Message localize(final Topic topic, final Map<String, String> topicContext) {
+		final LinkedList<Segment> newTopic = new LinkedList<>(this.topic.getSegments());
+
+		for (final Segment seg : topic.getSegments()) {
+			final String segValue1 = this.topic.renderSegment(newTopic.removeFirst(), topicContext);
+			final String segValue2 = topic.renderSegment(seg, topicContext);
+
+			if (!segValue1.equals(segValue2)) {
+				return null;
+			}
 		}
-		return new Message(newTopic, this.payload);
+
+		return new Message(Topic.from(newTopic), this.payload);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("[%s -> %s]", this.localTopic, this.payload);
+		return String.format("[%s -> %s]", this.topic, Hex.toHex(this.payload, 256));
 	}
 }

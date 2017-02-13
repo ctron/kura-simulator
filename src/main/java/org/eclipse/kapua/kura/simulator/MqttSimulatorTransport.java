@@ -13,6 +13,7 @@ package org.eclipse.kapua.kura.simulator;
 import static java.util.Objects.requireNonNull;
 
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -20,7 +21,7 @@ import java.util.function.Consumer;
 import org.apache.http.client.utils.URIBuilder;
 import org.eclipse.kapua.kura.simulator.payload.Message;
 import org.eclipse.kapua.kura.simulator.topic.Topic;
-import org.eclipse.kapua.kura.simulator.topic.Topics;
+import org.eclipse.kapua.kura.simulator.util.Hex;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -37,8 +38,6 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 
 	private static final Logger logger = LoggerFactory.getLogger(MqttSimulatorTransport.class);
 
-	private final GatewayConfiguration configuration;
-
 	private final MqttAsyncClient client;
 
 	private final MqttConnectOptions connectOptions;
@@ -50,12 +49,12 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 	private final Map<String, String> topicContext;
 
 	public MqttSimulatorTransport(final GatewayConfiguration configuration) throws MqttException {
-		this.configuration = configuration;
 
-		this.topicContext = new HashMap<>();
+		final Map<String, String> topicContext = new HashMap<>();
+		topicContext.put("account-name", configuration.getAccountName());
+		topicContext.put("client-id", configuration.getClientId());
 
-		this.topicContext.put("account-name", configuration.getAccountName());
-		this.topicContext.put("client-id", configuration.getClientId());
+		this.topicContext = Collections.unmodifiableMap(topicContext);
 
 		final String plainBrokerUrl = plainUrl(configuration.getBrokerUrl());
 		this.client = new MqttAsyncClient(plainBrokerUrl, configuration.getClientId());
@@ -167,9 +166,10 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 			this.client.subscribe(topic.render(this.topicContext), 0, null, null, new IMqttMessageListener() {
 
 				@Override
-				public void messageArrived(final String topic, final MqttMessage message) throws Exception {
-					final String localReceivedTopic = makeLocalTopic(topic);
-					consumer.accept(new Message(localReceivedTopic, message.getPayload()));
+				public void messageArrived(final String topic, final MqttMessage mqttMessage) throws Exception {
+					logger.debug("Received MQTT message from {}", topic);
+					consumer.accept(new Message(Topic.fromString(topic), mqttMessage.getPayload(),
+							MqttSimulatorTransport.this.topicContext));
 				}
 			});
 		} catch (final MqttException e) {
@@ -216,7 +216,9 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 
 	@Override
 	public void sendMessage(final Topic topic, final byte[] payload) {
-		logger.debug("Sending message - topic: {}, payload: {}", topic, payload);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Sending message - topic: {}, payload: {}", topic, Hex.toHex(payload, 256));
+		}
 
 		try {
 			final String fullTopic = topic.render(this.topicContext);
@@ -228,14 +230,4 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 		}
 	}
 
-	@Deprecated
-	private String makeLocalTopic(final String topic) {
-		return Topics.localize(makeTopic(null), topic);
-	}
-
-	@Deprecated
-	private String makeTopic(final String localTopic) {
-		return String.format("$EDC/%s/%s%s", this.configuration.getAccountName(), this.configuration.getClientId(),
-				localTopic != null ? "/" + localTopic : "");
-	}
 }

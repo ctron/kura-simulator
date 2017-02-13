@@ -21,6 +21,7 @@ import static org.eclipse.kapua.kura.simulator.payload.Metrics.getAsString;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.kapua.kura.simulator.payload.Message;
@@ -29,6 +30,8 @@ import org.eclipse.kapua.kura.simulator.topic.Topic;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.Builder;
+
+import com.google.protobuf.ByteString;
 
 public class Request {
 
@@ -74,6 +77,14 @@ public class Request {
 		return this.requestId;
 	}
 
+	public String renderTopic(final int index) {
+		return this.message.getTopic().render(index, index + 1);
+	}
+
+	public String renderTopic(final int fromIndex, final int toIndex) {
+		return this.message.getTopic().render(fromIndex, toIndex);
+	}
+
 	public static Request parse(final ApplicationContext context, final Message message) throws Exception {
 
 		final KuraPayload payload = KuraPayloadProto.KuraPayload.parseFrom(message.getPayload());
@@ -94,7 +105,9 @@ public class Request {
 		return new Request(context, message, metrics, requestId, requesterClientId);
 	}
 
-	public void sendReply(final int responseCode, final Map<String, Object> metrics) {
+	public void sendReply(final int responseCode, final Map<String, Object> metrics, final byte[] body) {
+		Objects.requireNonNull(metrics);
+
 		if (metrics.containsKey(KEY_RESPONSE_CODE)) {
 			throw new IllegalStateException("Metrics must not already contain '" + KEY_RESPONSE_CODE + "'");
 		}
@@ -103,12 +116,28 @@ public class Request {
 		Metrics.buildMetrics(payload, metrics);
 		Metrics.addMetric(payload, KEY_RESPONSE_CODE, responseCode);
 
+		if (body != null) {
+			payload.setBody(ByteString.copyFrom(body));
+		}
+
 		this.applicationContext.sendMessage(Topic.reply(this.requesterClientId, this.requestId),
 				payload.build().toByteArray());
 	}
 
+	public void sendReply(final int responseCode, final Map<String, Object> metrics) {
+		sendReply(responseCode, metrics, null);
+	}
+
+	public void sendReply(final int responseCode, final byte[] body) {
+		sendReply(responseCode, new HashMap<>(), body);
+	}
+
 	public void sendSuccess(final Map<String, Object> metrics) {
 		sendReply(200, metrics);
+	}
+
+	public void sendSuccess(final byte[] body) {
+		sendReply(200, body);
 	}
 
 	public void sendError(final Throwable error) {

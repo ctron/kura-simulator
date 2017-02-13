@@ -49,11 +49,13 @@ public class ApplicationController {
 	}
 
 	public void add(final Application application) {
-		final String id = application.getDescriptor().getId();
+		final Descriptor desc = application.getDescriptor();
+		final String id = desc.getId();
 
 		remove(application);
 
 		final ApplicationContext context = new ApplicationContext() {
+
 			@Override
 			public void sendMessage(final Topic topic, final byte[] payload) {
 				topic.attach("application-id", id);
@@ -82,7 +84,7 @@ public class ApplicationController {
 	private void subscribeEntry(final Entry entry) {
 		this.transport.subscribe(Topic.application(entry.getId()).append(wildcard()), msg -> {
 			// try to cut off application id prefix
-			final Message message = msg.localize(entry.getId());
+			final Message message = msg.localize(Topic.application(entry.getId()));
 			if (message != null) {
 				// matches our pattern
 				entry.getHandler().processMessage(message);

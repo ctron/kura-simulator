@@ -20,7 +20,7 @@ public abstract class AbstractDefaultApplication implements Application {
 
 	private final Descriptor descriptor;
 
-	protected abstract void processRequest(final Request request);
+	protected abstract void processRequest(final Request request) throws Exception;
 
 	public AbstractDefaultApplication(final String applicationId) {
 		this.descriptor = new Descriptor(applicationId);
