@@ -25,7 +25,11 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 
-public class Documents {
+public final class Documents {
+
+	private Documents() {
+	}
+
 	public static String create(final Consumer<Document> documentBuilder)
 			throws ParserConfigurationException, TransformerException {
 		final StringWriter sw = new StringWriter();

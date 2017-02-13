@@ -47,6 +47,9 @@ public class TestApplication {
 		logger.info("Exiting...");
 	}
 
+	/**
+	 * Redirect Paho logging to SLF4J
+	 */
 	private static void toInfinityAndBeyond() {
 		java.util.logging.LogManager.getLogManager().reset();
 		SLF4JBridgeHandler.removeHandlersForRootLogger();

@@ -22,6 +22,9 @@ import org.eclipse.kapua.kura.simulator.topic.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A default Kura simulator
+ */
 public class Simulator implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(Simulator.class);
