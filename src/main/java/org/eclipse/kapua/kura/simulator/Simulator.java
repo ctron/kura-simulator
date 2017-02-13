@@ -61,7 +61,7 @@ public class Simulator implements AutoCloseable {
 
 	@Override
 	public void close() {
-		this.transport.disconnect();
+		// we don't close the transport here
 	}
 
 	public void connected() {

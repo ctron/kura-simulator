@@ -42,7 +42,9 @@ public class TestApplication {
 		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
 				final Simulator simulator = new Simulator(configuration, transport, apps);) {
 			Thread.sleep(120_000);
+			logger.info("Bye bye...");
 		}
+		logger.info("Exiting...");
 	}
 
 	private static void toInfinityAndBeyond() {

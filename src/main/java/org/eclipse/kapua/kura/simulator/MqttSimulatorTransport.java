@@ -152,7 +152,7 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 	@Override
 	public void close() throws MqttException {
 		try {
-			this.client.disconnectForcibly();
+			this.client.disconnect(0).waitForCompletion();
 		} finally {
 			this.client.close();
 		}
