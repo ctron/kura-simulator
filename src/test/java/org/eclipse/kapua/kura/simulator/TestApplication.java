@@ -12,13 +12,15 @@ package org.eclipse.kapua.kura.simulator;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.kapua.kura.simulator.app.Application;
 import org.eclipse.kapua.kura.simulator.app.annotated.AnnotatedApplication;
 import org.eclipse.kapua.kura.simulator.app.command.SimpleCommandApplication;
 import org.eclipse.kapua.kura.simulator.app.deploy.SimpleDeployApplication;
+import org.eclipse.kapua.kura.simulator.util.NameThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -35,14 +37,19 @@ public class TestApplication {
 		final GatewayConfiguration configuration = new GatewayConfiguration(
 				"tcp://kapua-broker:kapua-password@localhost:1883", "kapua-sys", "sim-1");
 
-		final Set<@NonNull Application> apps = new HashSet<>();
+		final ScheduledExecutorService downloadExecutor = Executors
+				.newSingleThreadScheduledExecutor(new NameThreadFactory("DownloadSimulator"));
+
+		final Set<Application> apps = new HashSet<>();
 		apps.add(new SimpleCommandApplication(s -> String.format("Command '%s' not found", s)));
-		apps.add(AnnotatedApplication.build(SimpleDeployApplication.class));
+		apps.add(AnnotatedApplication.build(new SimpleDeployApplication(downloadExecutor)));
 
 		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
 				final Simulator simulator = new Simulator(configuration, transport, apps);) {
-			Thread.sleep(120_000);
+			Thread.sleep(120_000 * 1000);
 			logger.info("Bye bye...");
+		} finally {
+			downloadExecutor.shutdown();
 		}
 		logger.info("Exiting...");
 	}

@@ -21,7 +21,6 @@ import static org.eclipse.kapua.kura.simulator.payload.Metrics.getAsString;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.kapua.kura.simulator.payload.Message;
@@ -30,10 +29,11 @@ import org.eclipse.kapua.kura.simulator.topic.Topic;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.Builder;
-
-import com.google.protobuf.ByteString;
+import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.KuraMetricOrBuilder;
 
 public class Request {
+
+	private static final String NL = System.lineSeparator();
 
 	private final ApplicationContext applicationContext;
 	private final Message message;
@@ -105,52 +105,131 @@ public class Request {
 		return new Request(context, message, metrics, requestId, requesterClientId);
 	}
 
-	public void sendReply(final int responseCode, final Map<String, Object> metrics, final byte[] body) {
-		Objects.requireNonNull(metrics);
-
-		if (metrics.containsKey(KEY_RESPONSE_CODE)) {
-			throw new IllegalStateException("Metrics must not already contain '" + KEY_RESPONSE_CODE + "'");
-		}
-
-		final Builder payload = KuraPayload.newBuilder();
-		Metrics.buildMetrics(payload, metrics);
-		Metrics.addMetric(payload, KEY_RESPONSE_CODE, responseCode);
-
-		if (body != null) {
-			payload.setBody(ByteString.copyFrom(body));
-		}
-
-		this.applicationContext.sendMessage(Topic.reply(this.requesterClientId, this.requestId),
-				payload.build().toByteArray());
+	/**
+	 * Get a success reply sender
+	 * <p>
+	 * <strong>Note:</strong> A reply will only be send when one of the
+	 * {@code send} methods of the result was invoked.
+	 * </p>
+	 *
+	 * @return a new sender, never returns {@code null}
+	 */
+	public Sender replySuccess() {
+		return reply(200);
 	}
 
-	public void sendReply(final int responseCode, final Map<String, Object> metrics) {
-		sendReply(responseCode, metrics, null);
+	/**
+	 * Get a error reply sender
+	 * <p>
+	 * <strong>Note:</strong> A reply will only be send when one of the
+	 * {@code send} methods of the result was invoked.
+	 * </p>
+	 *
+	 * @return a new sender, never returns {@code null}
+	 */
+	public Sender replyError() {
+		return reply(500);
 	}
 
-	public void sendReply(final int responseCode, final byte[] body) {
-		sendReply(responseCode, new HashMap<>(), body);
+	/**
+	 * Get a reply sender
+	 * <p>
+	 * <strong>Note:</strong> A reply will only be send when one of the
+	 * {@code send} methods of the result was invoked.
+	 * </p>
+	 *
+	 * @return a new sender, never returns {@code null}
+	 */
+	public Sender reply(final int responseCode) {
+		return new Sender() {
+
+			@Override
+			protected void send(final KuraPayload.Builder payload) {
+
+				// check for existing response code metric
+
+				for (final KuraMetricOrBuilder m : payload.getMetricOrBuilderList()) {
+					if (m.getName().equals(KEY_RESPONSE_CODE)) {
+						throw new IllegalArgumentException(
+								String.format("Metrics must not already contain '%s'", KEY_RESPONSE_CODE));
+					}
+				}
+
+				// add response code
+
+				Metrics.addMetric(payload, KEY_RESPONSE_CODE, responseCode);
+
+				Request.this.applicationContext.sendMessage(
+						Topic.reply(Request.this.requesterClientId, Request.this.requestId),
+						payload.build().toByteArray());
+			}
+		};
 	}
 
-	public void sendSuccess(final Map<String, Object> metrics) {
-		sendReply(200, metrics);
+	/**
+	 * Get a notification sender
+	 * <p>
+	 * <strong>Note:</strong> A reply will only be send when one of the
+	 * {@code send} methods of the result was invoked.
+	 * </p>
+	 *
+	 * @return a new sender, never returns {@code null}
+	 */
+	public Sender notification(final String resource) {
+		return new Sender() {
+
+			@Override
+			protected void send(final Builder payload) {
+				Request.this.applicationContext.sendMessage(Topic.notify(Request.this.requesterClientId, resource),
+						payload.build().toByteArray());
+			}
+		};
 	}
 
-	public void sendSuccess(final byte[] body) {
-		sendReply(200, body);
-	}
-
-	public void sendError(final Throwable error) {
-
+	/**
+	 * Send an error reply
+	 */
+	public void replyError(final Throwable error) {
 		final Map<String, Object> metrics = new HashMap<>();
 		if (error != null) {
 			metrics.put(KEY_RESPONSE_EXCEPTION_MESSAGE, ExceptionUtils.getRootCauseMessage(error));
 			metrics.put(KEY_RESPONSE_EXCEPTION_STACKTRACE, ExceptionUtils.getStackTrace(error));
 		}
-		sendReply(500, metrics);
+		reply(500).send(metrics);
 	}
 
-	public void sendNotFound() {
-		sendReply(404, Collections.emptyMap());
+	/**
+	 * Send a
+	 * <q>not found</q> reply
+	 */
+	public void replyNotFound() {
+		reply(404).send(Collections.emptyMap());
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+
+		sb.append("[Request - ").append(this.message.getTopic());
+
+		if (!this.metrics.isEmpty()) {
+			sb.append(NL);
+		}
+
+		for (final Map.Entry<String, Object> entry : this.metrics.entrySet()) {
+			final Object value = entry.getValue();
+
+			sb.append("\t");
+			sb.append(entry.getKey()).append(" => ");
+			if (value != null) {
+				sb.append(value.getClass().getSimpleName()).append(" : ").append(value);
+			} else {
+				sb.append("null");
+			}
+			sb.append(NL);
+		}
+		sb.append("]");
+
+		return sb.toString();
 	}
 }

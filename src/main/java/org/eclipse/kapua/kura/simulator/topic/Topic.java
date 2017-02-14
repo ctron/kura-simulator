@@ -82,6 +82,11 @@ public final class Topic {
 			return raw(segment);
 		}
 
+		public static List<Segment> plain(final String... segment) {
+			Objects.requireNonNull(segment);
+			return Arrays.stream(segment).map(Segment::plain).collect(Collectors.toList());
+		}
+
 		public static Segment raw(final String raw) {
 			Objects.requireNonNull(raw);
 
@@ -216,6 +221,17 @@ public final class Topic {
 	public static Topic reply(final String requesterClientId, final String requestId) {
 		return new Topic(control(), account(), plain(requesterClientId), replace("application-id"), plain("REPLY"),
 				plain(requestId));
+	}
+
+	public static Topic notify(final String requesterClientId, final String... resource) {
+		final List<Segment> s = new LinkedList<>();
+		s.add(control());
+		s.add(account());
+		s.add(plain(requesterClientId));
+		s.add(replace("application-id"));
+		s.add(plain("NOTIFY"));
+		s.addAll(plain(resource));
+		return new Topic(s);
 	}
 
 	public static Topic application(final String application) {

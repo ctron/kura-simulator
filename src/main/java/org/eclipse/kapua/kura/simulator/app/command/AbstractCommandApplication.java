@@ -64,7 +64,7 @@ public abstract class AbstractCommandApplication extends AbstractDefaultApplicat
 	@Override
 	protected void processRequest(final Request request) {
 		if (!"EXEC/command".equals(request.getMessage().getTopic().render(0, 2))) {
-			request.sendNotFound();
+			request.replyNotFound();
 			return;
 		}
 
@@ -80,7 +80,7 @@ public abstract class AbstractCommandApplication extends AbstractDefaultApplicat
 		result.put("command.stderr", resultValue.getStandardError());
 		result.put("command.exit.code", resultValue.getReturnCode());
 		result.put("command.timedout", resultValue.isTimeout());
-		request.sendSuccess(result);
+		request.replySuccess().send(result);
 	}
 
 }

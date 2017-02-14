@@ -52,11 +52,13 @@ public abstract class AbstractDefaultApplication implements Application {
 			return;
 		}
 
+		logger.debug("Processing request: {}", request);
+
 		try {
 			processRequest(request);
 		} catch (final Exception e) {
 			logger.info("Failed to process request", e);
-			request.sendError(e);
+			request.replyError(e);
 		}
 	}
 

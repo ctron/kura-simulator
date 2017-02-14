@@ -66,7 +66,7 @@ public final class AnnotatedApplication extends AbstractDefaultApplication {
 		final ResourceHandler handler = this.handlers.get(comand);
 		logger.info("Mapping request - {} -> {}", comand, handler);
 		if (handler == null) {
-			request.sendNotFound();
+			request.replyNotFound();
 			return;
 		}
 
@@ -179,8 +179,17 @@ public final class AnnotatedApplication extends AbstractDefaultApplication {
 	}
 
 	private static void mapMethod(final Map<String, ResourceHandler> handlers, final Object applicationInstance,
-			final Method method, final String verb, final String resource) throws IllegalAccessException {
+			final Method method, String verb, final String resource) throws IllegalAccessException {
+
+		// allow proper verbs
+		if ("DELETE".equals(verb)) {
+			verb = "DEL";
+		} else if ("EXECUTE".equals(verb)) {
+			verb = "EXEC";
+		}
+
 		logger.info("Mapping - {} - {}/{}", method.getDeclaringClass().getName(), verb, resource);
+
 		final MethodHandle mh = MethodHandles.lookup().unreflect(method);
 		handlers.put(verb + "/" + resource, new PlainMethodHandler(mh.bindTo(applicationInstance)));
 	}

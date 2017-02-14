@@ -10,10 +10,16 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator.payload;
 
-import java.util.HashMap;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.KuraMetric;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.KuraMetric.ValueType;
@@ -43,6 +49,8 @@ public final class Metrics {
 	 *             in case of an unsupported value type
 	 */
 	public static void buildMetrics(final KuraPayload.Builder builder, final Map<String, Object> metrics) {
+		Objects.requireNonNull(metrics);
+
 		for (final Map.Entry<String, Object> metric : metrics.entrySet()) {
 			addMetric(builder, metric.getKey(), metric.getValue());
 		}
@@ -96,7 +104,10 @@ public final class Metrics {
 			return null;
 		}
 
-		final Map<String, Object> result = new HashMap<>(metricList.size());
+		/*
+		 * We are using a TreeMap in order to have a stable order of properties
+		 */
+		final Map<String, Object> result = new TreeMap<>();
 
 		for (final KuraMetric metric : metricList) {
 			final String name = metric.getName();
@@ -141,5 +152,63 @@ public final class Metrics {
 			return (String) value;
 		}
 		return defaultValue;
+	}
+
+	public static <T> T readFrom(final T object, final Map<String, Object> metrics) {
+		Objects.requireNonNull(object);
+
+		for (final Field field : FieldUtils.getFieldsListWithAnnotation(object.getClass(), Metric.class)) {
+			final Metric m = field.getAnnotation(Metric.class);
+			final boolean optional = field.isAnnotationPresent(Optional.class);
+
+			final Object value = metrics.get(m.value());
+			if (value == null && !optional) {
+				throw new IllegalArgumentException(
+						String.format("Field '%s' is missing metric '%s'", field.getName(), m.value()));
+			}
+
+			if (value == null) {
+				// not set but optional
+				continue;
+			}
+
+			try {
+				FieldUtils.writeField(field, object, value, true);
+			} catch (final IllegalArgumentException e) {
+				// provide a better message
+				throw new IllegalArgumentException(String.format("Failed to assign '%s' (%s) to field '%s'", value,
+						value.getClass().getName(), field.getName()), e);
+			} catch (final IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		for (final Method method : MethodUtils.getMethodsListWithAnnotation(object.getClass(), Metric.class)) {
+			final Metric m = method.getAnnotation(Metric.class);
+			final boolean optional = method.isAnnotationPresent(Optional.class);
+
+			final Object value = metrics.get(m.value());
+			if (value == null && !optional) {
+				throw new IllegalArgumentException(
+						String.format("Method '%s' is missing metric '%s'", method.getName(), m.value()));
+			}
+
+			if (value == null) {
+				// not set but optional
+				continue;
+			}
+
+			try {
+				method.invoke(object, value);
+			} catch (final IllegalArgumentException e) {
+				// provide a better message
+				throw new IllegalArgumentException(String.format("Failed to call '%s' (%s) with method '%s'", value,
+						value.getClass().getName(), method.getName()), e);
+			} catch (IllegalAccessException | InvocationTargetException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		return object;
 	}
 }
