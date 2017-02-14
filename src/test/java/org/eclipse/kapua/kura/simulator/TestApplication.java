@@ -85,25 +85,28 @@ public class TestApplication {
 			logger.info("Bye bye...");
 		} finally {
 			downloadExecutor.shutdown();
-
-			final LinkedList<Throwable> errors = new LinkedList<>();
-
-			for (final AutoCloseable c : close) {
-				try {
-					c.close();
-				} catch (final Exception e) {
-					errors.add(e);
-				}
-			}
-
-			final Throwable e = errors.pollFirst();
-			if (e != null) {
-				errors.forEach(e::addSuppressed);
-				throw e;
-			}
+			closeAll(close);
 		}
 
 		logger.info("Exiting...");
+	}
+
+	private static void closeAll(final List<AutoCloseable> close) throws Throwable {
+		final LinkedList<Throwable> errors = new LinkedList<>();
+
+		for (final AutoCloseable c : close) {
+			try {
+				c.close();
+			} catch (final Exception e) {
+				errors.add(e);
+			}
+		}
+
+		final Throwable e = errors.pollFirst();
+		if (e != null) {
+			errors.forEach(e::addSuppressed);
+			throw e;
+		}
 	}
 
 	/**
