@@ -15,7 +15,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.kapua.kura.simulator.Transport;
 import org.eclipse.kapua.kura.simulator.payload.Metrics;
+import org.eclipse.kapua.kura.simulator.topic.Topic;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload;
 import org.eclipse.kura.core.message.protobuf.KuraPayloadProto.KuraPayload.Builder;
 
@@ -56,5 +58,15 @@ public abstract class Sender {
 		}
 
 		send(payload);
+	}
+
+	public static Sender transportSender(final Topic topic, final Transport transport) {
+		return new Sender() {
+
+			@Override
+			protected void send(final Builder payload) {
+				transport.sendMessage(topic, payload.build().toByteArray());
+			}
+		};
 	}
 }

@@ -10,15 +10,13 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator;
 
-import static java.time.Instant.now;
-
-import java.time.Instant;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.kapua.kura.simulator.app.Application;
 import org.eclipse.kapua.kura.simulator.app.ApplicationController;
-import org.eclipse.kapua.kura.simulator.payload.BirthCertificateBuilder;
-import org.eclipse.kapua.kura.simulator.topic.Topic;
+import org.eclipse.kapua.kura.simulator.birth.BirthCertificateModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,17 +27,13 @@ public class Simulator implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(Simulator.class);
 
-	private final Transport transport;
-	private final Instant started;
+	protected final Transport transport;
 
-	private final BirthCertificateBuilder birthCertificateBuilder;
-
-	private final ApplicationController applicationController;
+	protected List<Module> modules = new LinkedList<>();
 
 	public Simulator(final GatewayConfiguration configuration, final Transport transport,
 			final Set<Application> applications) {
 
-		this.started = now();
 		this.transport = transport;
 
 		// set up callbacks
@@ -49,13 +43,12 @@ public class Simulator implements AutoCloseable {
 
 		// set up application controller
 
-		this.applicationController = new ApplicationController(transport);
-		applications.forEach(this.applicationController::add);
+		final ApplicationController applicationController = new ApplicationController(transport, applications);
+		this.modules.add(applicationController);
 
 		// set up builder
 
-		this.birthCertificateBuilder = new BirthCertificateBuilder(configuration, this.started,
-				this.applicationController::getApplicationIds);
+		this.modules.add(new BirthCertificateModule(configuration, applicationController::getApplicationIds));
 
 		// finally connect
 
@@ -67,15 +60,25 @@ public class Simulator implements AutoCloseable {
 		// we don't close the transport here
 	}
 
-	public void connected() {
+	protected void connected() {
 		logger.info("Connected ... sending birth certificate ...");
-		// FIXME: pull out as simulator modules
-		this.transport.sendMessage(Topic.device("MQTT/BIRTH"), this.birthCertificateBuilder.build());
-		this.applicationController.connected();
+		for (final Module module : this.modules) {
+			try {
+				module.connected(this.transport);
+			} catch (final Exception e) {
+				logger.warn("Failed to call module: {}", module, e);
+			}
+		}
 	}
 
-	public void disconnected() {
-		this.applicationController.disconnected();
+	protected void disconnected() {
+		for (final Module module : this.modules) {
+			try {
+				module.disconnected(this.transport);
+			} catch (final Exception e) {
+				logger.warn("Failed to call module: {}", module, e);
+			}
+		}
 	}
 
 }

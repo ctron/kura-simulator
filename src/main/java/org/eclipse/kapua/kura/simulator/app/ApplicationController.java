@@ -12,16 +12,18 @@ package org.eclipse.kapua.kura.simulator.app;
 
 import static org.eclipse.kapua.kura.simulator.topic.Topic.Segment.wildcard;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.kapua.kura.simulator.Module;
 import org.eclipse.kapua.kura.simulator.Transport;
 import org.eclipse.kapua.kura.simulator.payload.Message;
 import org.eclipse.kapua.kura.simulator.topic.Topic;
 
-public class ApplicationController {
+public class ApplicationController implements Module {
 
 	private final Map<String, Entry> applications = new HashMap<>();
 	private final Transport transport;
@@ -46,6 +48,11 @@ public class ApplicationController {
 
 	public ApplicationController(final Transport transport) {
 		this.transport = transport;
+	}
+
+	public ApplicationController(final Transport transport, final Collection<Application> applications) {
+		this.transport = transport;
+		applications.forEach(this::add);
 	}
 
 	public void add(final Application application) {
@@ -92,14 +99,16 @@ public class ApplicationController {
 		});
 	}
 
-	public void connected() {
+	@Override
+	public void connected(final Transport transport) {
 		for (final Entry entry : this.applications.values()) {
 			entry.getHandler().connected();
 			subscribeEntry(entry);
 		}
 	}
 
-	public void disconnected() {
+	@Override
+	public void disconnected(final Transport transport) {
 		for (final Entry entry : this.applications.values()) {
 			entry.getHandler().disconnected();
 		}

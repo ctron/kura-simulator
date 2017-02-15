@@ -46,7 +46,6 @@ public class SingleTestApplication {
 
 		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
 				final Simulator simulator = new Simulator(configuration, transport, apps);) {
-
 			Thread.sleep(Long.MAX_VALUE);
 			logger.info("Bye bye...");
 		} finally {

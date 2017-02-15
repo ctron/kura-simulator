@@ -8,7 +8,7 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator.payload;
+package org.eclipse.kapua.kura.simulator.birth;
 
 import static com.google.common.io.BaseEncoding.base16;
 import static java.time.Duration.between;
