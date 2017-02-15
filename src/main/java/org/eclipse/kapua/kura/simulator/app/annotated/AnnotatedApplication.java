@@ -64,7 +64,7 @@ public final class AnnotatedApplication extends AbstractDefaultApplication {
 		final String comand = request.getMessage().getTopic().render(0, 2);
 
 		final ResourceHandler handler = this.handlers.get(comand);
-		logger.info("Mapping request - {} -> {}", comand, handler);
+		logger.debug("Mapping request - {} -> {}", comand, handler);
 		if (handler == null) {
 			request.replyNotFound();
 			return;
@@ -188,7 +188,7 @@ public final class AnnotatedApplication extends AbstractDefaultApplication {
 			verb = "EXEC";
 		}
 
-		logger.info("Mapping - {} - {}/{}", method.getDeclaringClass().getName(), verb, resource);
+		logger.debug("Mapping - {} - {}/{}", method.getDeclaringClass().getName(), verb, resource);
 
 		final MethodHandle mh = MethodHandles.lookup().unreflect(method);
 		handlers.put(verb + "/" + resource, new PlainMethodHandler(mh.bindTo(applicationInstance)));

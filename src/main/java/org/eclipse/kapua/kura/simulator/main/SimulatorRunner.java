@@ -8,7 +8,7 @@
  * Contributors:
  *     Red Hat Inc - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.kura.simulator;
+package org.eclipse.kapua.kura.simulator.main;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -17,10 +17,14 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
+import org.eclipse.kapua.kura.simulator.GatewayConfiguration;
+import org.eclipse.kapua.kura.simulator.MqttSimulatorTransport;
+import org.eclipse.kapua.kura.simulator.Simulator;
 import org.eclipse.kapua.kura.simulator.app.Application;
 import org.eclipse.kapua.kura.simulator.app.annotated.AnnotatedApplication;
 import org.eclipse.kapua.kura.simulator.app.command.SimpleCommandApplication;
@@ -30,8 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-public class TestApplication {
-	private static final Logger logger = LoggerFactory.getLogger(TestApplication.class);
+/**
+ * This is a main class running a simple default simulator setup with multiple
+ * instances
+ */
+public class SimulatorRunner {
+	private static final Logger logger = LoggerFactory.getLogger(SimulatorRunner.class);
 
 	public static void main(final String[] args) throws Throwable {
 
@@ -46,14 +54,15 @@ public class TestApplication {
 
 		final CommandLine cli = new DefaultParser().parse(opts, args);
 
-		final String basename = cli.getOptionValue('n', "sim-");
-		final int count = Integer.parseInt(cli.getOptionValue('c', "1"));
-		final String broker = cli.getOptionValue('b', "tcp://kapua-broker:kapua-password@localhost:1883");
-		final String accountName = cli.getOptionValue('a', "kapua-sys");
+		final String basename = cli.getOptionValue('n', env("KSIM_BASE_NAME", "sim-"));
+		final int count = Integer.parseInt(cli.getOptionValue('c', env("KSIM_NUM_GATEWAYS", "1")));
+		final String broker = cli.getOptionValue('b', createBrokerUrl());
+		final String accountName = cli.getOptionValue('a', env("KSIM_ACCOUNT_NAME", "kapua-sys"));
 		final long shutdownAfter = Long.parseLong(cli.getOptionValue('s', Long.toString(Long.MAX_VALUE / 1_000L)));
 
-		logger.info("Starting ...");
+		dumpEnv();
 
+		logger.info("Starting simulation ...");
 		logger.info("\tbasename : {}", basename);
 		logger.info("\tcount: {}", count);
 		logger.info("\tbroker: {}", broker);
@@ -89,6 +98,55 @@ public class TestApplication {
 		}
 
 		logger.info("Exiting...");
+	}
+
+	private static void dumpEnv() {
+
+		final List<String> keys = System.getenv().keySet().stream().filter(key -> key.startsWith("KSIM_")).sorted()
+				.collect(Collectors.toList());
+
+		if (keys.isEmpty()) {
+			logger.info("No KSIM_* env vars found");
+			return;
+		}
+
+		logger.info("Dumping KSIM_* env vars:");
+		for (final String key : keys) {
+			logger.info("\t{} = '{}'", key, System.getenv(key));
+		}
+	}
+
+	private static String createBrokerUrl() {
+		final String broker = System.getenv("KSIM_BROKER_URL");
+		if (broker != null && !broker.isEmpty()) {
+			return broker;
+		}
+
+		final String proto = env("KSIM_BROKER_PROTO", "tcp");
+		final String user = env("KSIM_BROKER_USER", null);
+		final String password = env("KSIM_BROKER_PASSWORD", null);
+		final String host = env("KSIM_BROKER_HOST", "localhost");
+		final String port = env("KSIM_BROKER_PORT", "1883");
+
+		final StringBuilder sb = new StringBuilder(128);
+
+		sb.append(proto).append("://");
+
+		if (user != null && !user.isEmpty()) {
+			sb.append(user);
+			if (password != null && !password.isEmpty()) {
+				sb.append(':').append(password);
+			}
+			sb.append('@');
+		}
+
+		sb.append(host).append(':').append(port);
+
+		return sb.toString();
+	}
+
+	private static String env(final String envName, final String defaultValue) {
+		return System.getenv().getOrDefault(envName, defaultValue);
 	}
 
 	private static void closeAll(final List<AutoCloseable> close) throws Throwable {

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.kapua.kura.simulator.GatewayConfiguration;
 
 public class BirthCertificateBuilder {
@@ -42,7 +41,7 @@ public class BirthCertificateBuilder {
 
 	protected static void fillInConnectionInformation(final Map<String, Object> metrics) {
 		try {
-			final Enumeration<@Nullable NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+			final Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
 			if (nis == null) {
 				return;
 			}
