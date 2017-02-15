@@ -155,6 +155,10 @@
 									<targetDir>/opt/${project.artifactId}</targetDir>
 									<descriptor>kura-simulator.xml</descriptor>
 								</assembly>
+								<runCmds>
+									<runCmd>adduser -D -g "" simulator</runCmd>
+								</runCmds>
+								<user>simulator</user>
 								<entryPoint>
 									<exec>
 										<arg>java</arg>
