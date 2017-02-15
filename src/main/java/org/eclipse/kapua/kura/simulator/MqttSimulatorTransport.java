@@ -31,6 +31,7 @@ import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +57,10 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 
 		this.topicContext = Collections.unmodifiableMap(topicContext);
 
+		final MemoryPersistence persistence = new MemoryPersistence();
+
 		final String plainBrokerUrl = plainUrl(configuration.getBrokerUrl());
-		this.client = new MqttAsyncClient(plainBrokerUrl, configuration.getClientId());
+		this.client = new MqttAsyncClient(plainBrokerUrl, configuration.getClientId(), persistence);
 		this.client.setCallback(new MqttCallback() {
 
 			@Override
