@@ -123,8 +123,8 @@ public class SimulatorRunner {
 		}
 
 		final String proto = env("KSIM_BROKER_PROTO", "tcp");
-		final String user = env("KSIM_BROKER_USER", null);
-		final String password = env("KSIM_BROKER_PASSWORD", null);
+		final String user = env("KSIM_BROKER_USER", "kapua-broker");
+		final String password = env("KSIM_BROKER_PASSWORD", "kapua-password");
 		final String host = env("KSIM_BROKER_HOST", "localhost");
 		final String port = env("KSIM_BROKER_PORT", "1883");
 
