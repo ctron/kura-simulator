@@ -32,16 +32,49 @@ public interface Transport {
 	 */
 	public void disconnect();
 
+	/**
+	 * Set the runnable which will be called when a connection was established
+	 * <p>
+	 * <strong>Note:</strong> When the connection is already established then
+	 * this method won't be called again.
+	 * </p>
+	 */
 	public void whenConnected(Runnable runnable);
 
+	/**
+	 * Set the runnable which will be called when a connection was lost
+	 */
 	public void whenDisconnected(Runnable runnable);
 
-	public void subscribe(Topic localTopic, Consumer<Message> consumer);
+	/**
+	 * Subscribe to a topic or topic pattern
+	 *
+	 * @param topic
+	 *            the topic to subscribe to
+	 * @param consumer
+	 *            the consumer to call when a message was received
+	 */
+	public void subscribe(Topic topic, Consumer<Message> consumer);
 
-	public void unsubscribe(Topic localTopic);
+	/**
+	 * Unsubscribe from a topic or topic pattern
+	 *
+	 * @param topic
+	 *            to unsubscribe from
+	 */
+	public void unsubscribe(Topic topic);
 
+	/**
+	 * Send a message to a topic
+	 * 
+	 * @param topic
+	 *            the topic to send the message to
+	 * @param payload
+	 *            the payload to send
+	 */
 	public void sendMessage(Topic topic, byte[] payload);
 
+	@Deprecated
 	public default void sendMessage(final Topic topic, final Map<String, Object> metrics) {
 		final Builder payload = KuraPayload.newBuilder();
 		Metrics.buildMetrics(payload, metrics);

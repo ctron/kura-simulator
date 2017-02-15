@@ -10,6 +10,9 @@
  *******************************************************************************/
 package org.eclipse.kapua.kura.simulator;
 
+/**
+ * This holds the main configuration of a gateway instance
+ */
 public class GatewayConfiguration {
 	private final String brokerUrl;
 	private final String accountName;

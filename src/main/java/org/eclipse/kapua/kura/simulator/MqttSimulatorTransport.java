@@ -35,6 +35,9 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A transport implementation based on MQTT
+ */
 public class MqttSimulatorTransport implements AutoCloseable, Transport {
 
 	private static final Logger logger = LoggerFactory.getLogger(MqttSimulatorTransport.class);

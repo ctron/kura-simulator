@@ -17,6 +17,11 @@ public class Descriptor {
 		this.id = id;
 	}
 
+	/**
+	 * Get the ID of the application
+	 * 
+	 * @return the application ID, must never return {@code null}
+	 */
 	public String getId() {
 		return this.id;
 	}
