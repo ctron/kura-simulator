@@ -4,7 +4,7 @@
 
 	<groupId>de.dentrassi.kura</groupId>
 	<artifactId>kura-simulator</artifactId>
-	<version>0.1.0</version>
+	<version>0.1.1-SNAPSHOT</version>
 
 	<name>Eclipse Kura™ simulator framework</name>
 	<description>This is a framework for simulating Eclipse Kura IoT gateway instances</description>
@@ -28,7 +28,7 @@
 		<connection>scm:git:git://github.com/ctron/kura-simulator.git</connection>
 		<url>https://github.com/ctron/kura-simulator</url>
 		<developerConnection>scm:git:git@github.com:ctron/kura-simulator.git</developerConnection>
-	  <tag>kura-simulator-0.1.0</tag>
+	  <tag>HEAD</tag>
   </scm>
 
 	<issueManagement>
