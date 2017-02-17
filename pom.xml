@@ -7,6 +7,43 @@
 	<artifactId>kura-simulator</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
+	<name>Eclipse Kura™ simulator</name>
+	<description>This is a framework for simulating Eclipse Kura IoT gateway instances</description>
+
+	<url>https://dentrassi.de/2017/02/14/testing-kapua-with-simulated-kura-gateways</url>
+
+	<inceptionYear>2017</inceptionYear>
+
+	<developers>
+		<developer>
+			<id>ctron</id>
+			<name>Jens Reimann</name>
+			<email>jreimann@redhat.com</email>
+
+			<organization>Red Hat Inc</organization>
+			<organizationUrl>http://redhat.com</organizationUrl>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git://github.com/ctron/kura-simulator.git</connection>
+		<url>https://github.com/ctron/kura-simulator</url>
+		<developerConnection>scm:git:git@github.com:ctron/kura-simulator.git</developerConnection>
+	</scm>
+
+	<issueManagement>
+		<url>https://github.com/ctron/kura-simulator/issues</url>
+		<system>GitHub Issues</system>
+	</issueManagement>
+
+	<licenses>
+		<license>
+			<name>The Eclipse Public License Version 1.0</name>
+			<url>http://www.eclipse.org/legal/epl-v10.html</url>
+			<distribution>manual</distribution>
+		</license>
+	</licenses>
+
 	<prerequisites>
 		<maven>3.3</maven>
 	</prerequisites>
