@@ -30,6 +30,7 @@ import org.eclipse.kapua.kura.simulator.app.annotated.AnnotatedApplication;
 import org.eclipse.kapua.kura.simulator.app.command.SimpleCommandApplication;
 import org.eclipse.kapua.kura.simulator.app.deploy.SimpleDeployApplication;
 import org.eclipse.kapua.kura.simulator.util.NameThreadFactory;
+import org.eclipse.scada.utils.str.StringReplacer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -54,11 +55,12 @@ public class SimulatorRunner {
 
 		final CommandLine cli = new DefaultParser().parse(opts, args);
 
-		final String basename = cli.getOptionValue('n', env("KSIM_BASE_NAME", "sim-"));
-		final int count = Integer.parseInt(cli.getOptionValue('c', env("KSIM_NUM_GATEWAYS", "1")));
-		final String broker = cli.getOptionValue('b', createBrokerUrl());
-		final String accountName = cli.getOptionValue('a', env("KSIM_ACCOUNT_NAME", "kapua-sys"));
-		final long shutdownAfter = Long.parseLong(cli.getOptionValue('s', Long.toString(Long.MAX_VALUE / 1_000L)));
+		final String basename = replace(cli.getOptionValue('n', env("KSIM_BASE_NAME", "sim-")));
+		final int count = Integer.parseInt(replace(cli.getOptionValue('c', env("KSIM_NUM_GATEWAYS", "1"))));
+		final String broker = replace(cli.getOptionValue('b', createBrokerUrl()));
+		final String accountName = replace(cli.getOptionValue('a', env("KSIM_ACCOUNT_NAME", "kapua-sys")));
+		final long shutdownAfter = Long
+				.parseLong(replace(cli.getOptionValue('s', Long.toString(Long.MAX_VALUE / 1_000L))));
 
 		dumpEnv();
 
@@ -122,11 +124,11 @@ public class SimulatorRunner {
 			return broker;
 		}
 
-		final String proto = env("KSIM_BROKER_PROTO", "tcp");
-		final String user = env("KSIM_BROKER_USER", "kapua-broker");
-		final String password = env("KSIM_BROKER_PASSWORD", "kapua-password");
-		final String host = env("KSIM_BROKER_HOST", "localhost");
-		final String port = env("KSIM_BROKER_PORT", "1883");
+		final String proto = replace(env("KSIM_BROKER_PROTO", "tcp"));
+		final String user = replace(env("KSIM_BROKER_USER", "kapua-broker"));
+		final String password = replace(env("KSIM_BROKER_PASSWORD", "kapua-password"));
+		final String host = replace(env("KSIM_BROKER_HOST", "localhost"));
+		final String port = replace(env("KSIM_BROKER_PORT", "1883"));
 
 		final StringBuilder sb = new StringBuilder(128);
 
@@ -147,6 +149,11 @@ public class SimulatorRunner {
 
 	private static String env(final String envName, final String defaultValue) {
 		return System.getenv().getOrDefault(envName, defaultValue);
+	}
+
+	private static String replace(final String string) {
+		return StringReplacer.replace(string, StringReplacer.newExtendedSource(System.getenv()),
+				StringReplacer.DEFAULT_PATTERN);
 	}
 
 	private static void closeAll(final List<AutoCloseable> close) throws Throwable {

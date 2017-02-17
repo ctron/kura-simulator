@@ -70,6 +70,12 @@
 			<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
 			<version>1.1.0</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.eclipse.neoscada.utils</groupId>
+			<artifactId>org.eclipse.scada.utils</artifactId>
+			<version>0.4.0</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
