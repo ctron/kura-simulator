@@ -17,7 +17,8 @@ DOCKER_HUB_ACCOUNT=ctron
 
 # Set up new simulator instance
 
-oc new-app "$DOCKER_HUB_ACCOUNT/kura-simulator:0.1.2-SNAPSHOT" -n "$OPENSHIFT_PROJECT_NAME" \
+oc new-app "$DOCKER_HUB_ACCOUNT/kura-simulator:0.1.2" -n "$OPENSHIFT_PROJECT_NAME" \
   '-eKSIM_BROKER_HOST=${KAPUA_BROKER_SERVICE_HOST}' \
   '-eKSIM_BROKER_PORT=${KAPUA_BROKER_SERVICE_PORT}' \
-  -eKSIM_NAME_FACTORY=host:addr
+  -eKSIM_NAME_FACTORY=host:addr \
+  -eKSIM_NUM_GATEWAYS=10

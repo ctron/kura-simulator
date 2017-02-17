@@ -8,3 +8,11 @@ The easiest solution with OpenShift is to follow the readme in the Kapua GitHub 
 The rest of this documentation assumes that you did set up Kapua in OpenShift according to the above document.
 
     ./setup.sh
+
+The script will create a new OpenShift application named `kura-simulator` which will connect to the broker in
+the local project. By default every pod will spin up 10 gateway instances. You can start more pods which will then
+multiply the instances.
+
+It is also possible to change the number of instances inside each pod by setting an environment variable:
+
+    oc env dc/kura-simulator KSIM_NUM_GATEWAYS=100
