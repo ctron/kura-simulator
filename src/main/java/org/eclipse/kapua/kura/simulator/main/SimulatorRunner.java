@@ -13,6 +13,7 @@ package org.eclipse.kapua.kura.simulator.main;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,6 +49,7 @@ public class SimulatorRunner {
 
 		final Options opts = new Options();
 		opts.addOption("n", "basename", true, "The base name of the simulator instance");
+		opts.addOption(null, "name-factory", true, "The name factory to use");
 		opts.addOption("c", "count", true, "The number of instances to start");
 		opts.addOption("b", "broker", true, "The URL to the broker");
 		opts.addOption("a", "account-name", true, "The name of the account");
@@ -56,6 +58,7 @@ public class SimulatorRunner {
 		final CommandLine cli = new DefaultParser().parse(opts, args);
 
 		final String basename = replace(cli.getOptionValue('n', env("KSIM_BASE_NAME", "sim-")));
+		final String nameFactoryName = cli.getOptionValue("name-factory", env("KSIM_NAME_FACTORY", null));
 		final int count = Integer.parseInt(replace(cli.getOptionValue('c', env("KSIM_NUM_GATEWAYS", "1"))));
 		final String broker = replace(cli.getOptionValue('b', createBrokerUrl()));
 		final String accountName = replace(cli.getOptionValue('a', env("KSIM_ACCOUNT_NAME", "kapua-sys")));
@@ -66,6 +69,7 @@ public class SimulatorRunner {
 
 		logger.info("Starting simulation ...");
 		logger.info("\tbasename : {}", basename);
+		logger.info("\tname-factory : {}", nameFactoryName);
 		logger.info("\tcount: {}", count);
 		logger.info("\tbroker: {}", broker);
 		logger.info("\taccount-name: {}", accountName);
@@ -75,10 +79,14 @@ public class SimulatorRunner {
 
 		final List<AutoCloseable> close = new LinkedList<>();
 
+		final NameFactory nameFactory = createNameFactory(nameFactoryName)
+				.orElseGet(() -> NameFactories.prefixed(basename));
+
 		try {
 			for (int i = 1; i <= count; i++) {
 
-				final String name = String.format("%s%s", basename, i);
+				final String name = nameFactory.generateName(i);
+				logger.info("Creating instance #{} - {}", i, name);
 
 				final GatewayConfiguration configuration = new GatewayConfiguration(broker, accountName, name);
 
@@ -100,6 +108,29 @@ public class SimulatorRunner {
 		}
 
 		logger.info("Exiting...");
+	}
+
+	private static Optional<NameFactory> createNameFactory(final String nameFactoryName) throws Exception {
+		if (nameFactoryName == null || nameFactoryName.isEmpty()) {
+			return Optional.empty();
+		}
+
+		switch (nameFactoryName) {
+		case "default":
+			return Optional.empty();
+		case "host:name":
+			return Optional.of(NameFactories.hostname());
+		case "host:addr":
+			return Optional.of(NameFactories.hostnameAddress());
+		case "host:iface:name":
+			return Optional.of(NameFactories.mainInterfaceName());
+		case "host:iface:index":
+			return Optional.of(NameFactories.mainInterfaceIndex());
+		case "host:iface:mac":
+			return Optional.of(NameFactories.mainInterfaceAddress());
+		default:
+			throw new IllegalArgumentException(String.format("Unknown name factory '%s'", nameFactoryName));
+		}
 	}
 
 	private static void dumpEnv() {
