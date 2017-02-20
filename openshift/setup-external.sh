@@ -19,7 +19,7 @@ set -e
 # Set up new simulator instance
 
 oc new-app "$DOCKER_HUB_ACCOUNT/kura-simulator:0.1.2" -n "$OPENSHIFT_PROJECT_NAME" \
-  '-eKSIM_BROKER_URL=${BROKER_URL}' \
+  "-eKSIM_BROKER_URL=${BROKER_URL}" \
   -eKSIM_NAME_FACTORY=host:addr \
   -eKSIM_NUM_GATEWAYS=10
 
