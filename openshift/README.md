@@ -2,14 +2,32 @@
 
 This is a short documentation about how to spin up the Eclipse Kura™ simulator in OpenShift.
 
+
+## Setting up inside Kapua
+
 First of all you need some setup of [Eclipse Kapua™](https://eclipse.org/kapua "Eclipse Kapua™").
 The easiest solution with OpenShift is to follow the readme in the Kapua GitHub repository: [dev-tools/src/main/openshift](https://github.com/eclipse/kapua/tree/develop/dev-tools/src/main/openshift "Setting up Kapua on OpenShift").
 
-The rest of this documentation assumes that you did set up Kapua in OpenShift according to the above document.
+Afterwards start the following script
 
     ./setup.sh
 
-The script will create a new OpenShift application named `kura-simulator` which will connect to the broker in
+## Setting up as external project
+
+Assuming your have already set up Kapua, either using OpenShift or in a different way, you can simply create
+a Kura simulator by:
+
+    oc new-project kura-simulator
+    BROKER_URL=tcp://localhost:1833 ./setup-external.sh
+
+The `BROKER_URL` variable must point to the MQTT you are using. It is also possible to use Websockets and user
+credentials:
+
+    BROKER_URL=ws://kapua-sys:kapua-password@localhost:80 ./setup-external.sh
+
+## Scaling
+
+The scripts will create a new OpenShift application named `kura-simulator` which will connect to the broker in
 the local project. By default every pod will spin up 10 gateway instances. You can start more pods which will then
 multiply the instances:
 

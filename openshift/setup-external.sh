@@ -12,14 +12,14 @@
 
 set -e
 
-: ${OPENSHIFT_PROJECT_NAME:=eclipse-kapua}
+: ${OPENSHIFT_PROJECT_NAME:=kura-simulator}
 : ${DOCKER_HUB_ACCOUNT:=ctron}
+: ${BROKER_URL:=tcp://localhost:1883}
 
 # Set up new simulator instance
 
 oc new-app "$DOCKER_HUB_ACCOUNT/kura-simulator:0.1.2" -n "$OPENSHIFT_PROJECT_NAME" \
-  '-eKSIM_BROKER_HOST=${KAPUA_BROKER_SERVICE_HOST}' \
-  '-eKSIM_BROKER_PORT=${KAPUA_BROKER_SERVICE_PORT}' \
+  '-eKSIM_BROKER_URL=${BROKER_URL}' \
   -eKSIM_NAME_FACTORY=host:addr \
   -eKSIM_NUM_GATEWAYS=10
 
