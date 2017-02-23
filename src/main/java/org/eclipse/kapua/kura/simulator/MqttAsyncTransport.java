@@ -38,9 +38,9 @@ import org.slf4j.LoggerFactory;
 /**
  * A transport implementation based on MQTT
  */
-public class MqttSimulatorTransport implements AutoCloseable, Transport {
+public class MqttAsyncTransport implements AutoCloseable, Transport {
 
-	private static final Logger logger = LoggerFactory.getLogger(MqttSimulatorTransport.class);
+	private static final Logger logger = LoggerFactory.getLogger(MqttAsyncTransport.class);
 
 	private final MqttAsyncClient client;
 
@@ -52,7 +52,7 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 
 	private final Map<String, String> topicContext;
 
-	public MqttSimulatorTransport(final GatewayConfiguration configuration) throws MqttException {
+	public MqttAsyncTransport(final GatewayConfiguration configuration) throws MqttException {
 
 		final Map<String, String> topicContext = new HashMap<>();
 		topicContext.put("account-name", configuration.getAccountName());
@@ -175,7 +175,7 @@ public class MqttSimulatorTransport implements AutoCloseable, Transport {
 				public void messageArrived(final String topic, final MqttMessage mqttMessage) throws Exception {
 					logger.debug("Received MQTT message from {}", topic);
 					consumer.accept(new Message(Topic.fromString(topic), mqttMessage.getPayload(),
-							MqttSimulatorTransport.this.topicContext));
+							MqttAsyncTransport.this.topicContext));
 				}
 			});
 		} catch (final MqttException e) {

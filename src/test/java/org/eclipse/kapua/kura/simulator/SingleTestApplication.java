@@ -44,7 +44,7 @@ public class SingleTestApplication {
 		apps.add(new SimpleCommandApplication(s -> String.format("Command '%s' not found", s)));
 		apps.add(AnnotatedApplication.build(new SimpleDeployApplication(downloadExecutor)));
 
-		try (final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
+		try (final MqttAsyncTransport transport = new MqttAsyncTransport(configuration);
 				final Simulator simulator = new Simulator(configuration, transport, apps);) {
 			Thread.sleep(Long.MAX_VALUE);
 			logger.info("Bye bye...");

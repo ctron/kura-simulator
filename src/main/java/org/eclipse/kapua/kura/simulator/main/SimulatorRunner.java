@@ -24,7 +24,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.eclipse.kapua.kura.simulator.GatewayConfiguration;
-import org.eclipse.kapua.kura.simulator.MqttSimulatorTransport;
+import org.eclipse.kapua.kura.simulator.MqttAsyncTransport;
 import org.eclipse.kapua.kura.simulator.Simulator;
 import org.eclipse.kapua.kura.simulator.app.Application;
 import org.eclipse.kapua.kura.simulator.app.annotated.AnnotatedApplication;
@@ -94,7 +94,7 @@ public class SimulatorRunner {
 				apps.add(new SimpleCommandApplication(s -> String.format("Command '%s' not found", s)));
 				apps.add(AnnotatedApplication.build(new SimpleDeployApplication(downloadExecutor)));
 
-				final MqttSimulatorTransport transport = new MqttSimulatorTransport(configuration);
+				final MqttAsyncTransport transport = new MqttAsyncTransport(configuration);
 				close.add(transport);
 				final Simulator simulator = new Simulator(configuration, transport, apps);
 				close.add(simulator);
