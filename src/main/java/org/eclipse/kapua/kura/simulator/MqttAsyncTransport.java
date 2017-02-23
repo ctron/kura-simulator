@@ -12,13 +12,8 @@ package org.eclipse.kapua.kura.simulator;
 
 import static java.util.Objects.requireNonNull;
 
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 
-import org.apache.http.client.utils.URIBuilder;
 import org.eclipse.kapua.kura.simulator.payload.Message;
 import org.eclipse.kapua.kura.simulator.topic.Topic;
 import org.eclipse.kapua.kura.simulator.util.Hex;
@@ -38,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A transport implementation based on MQTT
  */
-public class MqttAsyncTransport implements AutoCloseable, Transport {
+public class MqttAsyncTransport extends AbstractMqttTransport implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(MqttAsyncTransport.class);
 
@@ -50,18 +45,10 @@ public class MqttAsyncTransport implements AutoCloseable, Transport {
 
 	private Runnable onDisconnected;
 
-	private final Map<String, String> topicContext;
-
 	public MqttAsyncTransport(final GatewayConfiguration configuration) throws MqttException {
-
-		final Map<String, String> topicContext = new HashMap<>();
-		topicContext.put("account-name", configuration.getAccountName());
-		topicContext.put("client-id", configuration.getClientId());
-
-		this.topicContext = Collections.unmodifiableMap(topicContext);
+		super(configuration);
 
 		final MemoryPersistence persistence = new MemoryPersistence();
-
 		final String plainBrokerUrl = plainUrl(configuration.getBrokerUrl());
 		this.client = new MqttAsyncClient(plainBrokerUrl, configuration.getClientId(), persistence);
 		this.client.setCallback(new MqttCallback() {
@@ -80,39 +67,6 @@ public class MqttAsyncTransport implements AutoCloseable, Transport {
 			}
 		});
 		this.connectOptions = createConnectOptions(configuration.getBrokerUrl());
-	}
-
-	private static String plainUrl(final String brokerUrl) {
-		try {
-			final URIBuilder u = new URIBuilder(brokerUrl);
-			u.setUserInfo(null);
-			return u.build().toString();
-		} catch (final URISyntaxException e) {
-			throw new RuntimeException("Failed to clean up broker URL", e);
-		}
-	}
-
-	private MqttConnectOptions createConnectOptions(final String brokerUrl) {
-		try {
-			final URIBuilder u = new URIBuilder(brokerUrl);
-
-			final MqttConnectOptions result = new MqttConnectOptions();
-			result.setAutomaticReconnect(true);
-
-			final String ui = u.getUserInfo();
-			if (ui != null && !ui.isEmpty()) {
-				final String[] toks = ui.split("\\:", 2);
-				if (toks.length == 2) {
-					result.setUserName(toks[0]);
-					result.setPassword(toks[1].toCharArray());
-				}
-			}
-
-			return result;
-		} catch (final URISyntaxException e) {
-			throw new RuntimeException("Failed to create MQTT options", e);
-
-		}
 	}
 
 	@Override
